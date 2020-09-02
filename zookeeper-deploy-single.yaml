@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: zookeeper
+  name: zookeeper
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+        - image: liveget/zookeeper_aarch64:0.0.1
+          imagePullPolicy: Always
+          name: zookeeper
+      imagePullSecrets:
+        - name: regcred
