@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka-container
+        image: liveget/kafka_aarch64:0.0.1
+        command: [ "sh", "-c"]
+        args:
+        - while true; do
+            echo -en '\n';
+            printenv POD_ID;
+            sleep 10;
+          done;
+        ports:
+        - containerPort: 9092
+        env:
+        - name: POD_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: 10.109.20.156:2181
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://:9092
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: PLAINTEXT://10.110.24.103:9092
+      imagePullSecrets:
+      - name: regcred
+      restartPolicy: Never
