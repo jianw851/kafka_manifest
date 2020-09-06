@@ -19,7 +19,7 @@ metadata:
     app: kafka
   name: kafka-headless
   annotations:
-  service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
@@ -59,6 +59,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://:9092
         - name: KAFKA_HEAP_OPTS
           value: -Xmx2G -Xms2G
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
