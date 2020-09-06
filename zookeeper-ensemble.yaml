@@ -78,8 +78,5 @@ spec:
         - name: election
           containerPort: 3888
           protocol: TCP
-        command:
-        - /bin/sh
-        - exec /opt/start_zookeeper.sh
       imagePullSecrets:
       - name: regcred

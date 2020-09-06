@@ -3,25 +3,32 @@ kind: Service
 metadata:
   labels:
     app: kafka
+  name: bootstrap
+spec:
+  ports:
+    - name: kafka-broker-port
+      port: 9092
+      protocol: TCP
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
   name: kafka-headless
+  annotations:
+  service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   ports:
     - name: kafka-port
       port: 9092
       protocol: TCP
   selector:
     app: kafka
----
-apiVersion: policy/v1beta1
-kind: PodDisruptionBudget
-metadata:
-  name: kafka-pdb
-spec:
-  selector:
-    matchLabels:
-      app: kafka
-  maxUnavailable: 1
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -43,7 +50,8 @@ spec:
     spec:
       containers:
       - name: kafka
-        image: liveget/kafka_aarch64:0.0.1
+        image: liveget/kafka_aarch64:0.0.2
+        imagePullPolicy: Always
         ports:
         - containerPort: 9092
         env:
@@ -53,8 +61,6 @@ spec:
               fieldPath: status.podIP
         - name: KAFKA_HEAP_OPTS
           value: -Xmx2G -Xms2G
-        - name: KAFKA_LISTENERS
-          value: PLAINTEXT://:9092
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
           value: "true"
         - name: KAFKA_AUTO_LEADER_REBALANCE_ENABLE
@@ -64,8 +70,9 @@ spec:
             - -exc
             - |
               unset KAFKA_PORT && \
-              export KAFKA_ZOOKEEPER_CONNECT=${KAFKA_ZOOKEEPER_SERVICE_HOST}:${KAFKA_ZOOKEEPER_SERVICE_PORT}
+              export KAFKA_ZOOKEEPER_CONNECT=${KAFKA_ZOOKEEPER_SERVICE_HOST}:${KAFKA_ZOOKEEPER_SERVICE_PORT} && \
               export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
+              export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092 && \
               exec start-kafka.sh
       imagePullSecrets:
       - name: regcred
