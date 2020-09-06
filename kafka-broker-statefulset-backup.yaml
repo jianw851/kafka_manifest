@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
+  name: kafka-svc
+spec:
+  ports:
+    - name: kafka-broker-port
+      port: 9092
+      targetPort: kafka
+      protocol: TCP
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
+  name: kafka-headless
+spec:
+  clusterIP: None
+  ports:
+    - name: kafka-port
+      port: 9092
+      protocol: TCP
+  selector:
+    app: kafka
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-broker
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: liveget/kafka_aarch64:0.0.1
+        ports:
+        - containerPort: 9092
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: KAFKA_HEAP_OPTS
+          value: -Xmx1G -Xms1G
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://:9092
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: true
+        - name: KAFKA_AUTO_LEADER_REBALANCE_ENABLE
+          value: true
+        command:
+            - /bin/sh
+            - -exc
+            - |
+              unset KAFKA_PORT && \
+              export KAFKA_ZOOKEEPER_CONNECT=${KAFKA_ZOOKEEPER_SERVICE_HOST}:${KAFKA_ZOOKEEPER_SERVICE_PORT}
+              export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
+              export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092 && \
+              exec start-kafka.sh
+      imagePullSecrets:
+      - name: regcred
