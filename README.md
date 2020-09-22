@@ -1,14 +1,7 @@
-# 1. create zookeeper service and deployment
+# 1. create zookeeper services and statefulset 
 
-<code>create apply -f zookeeper_full.yaml</code>
+<code>create apply -f zookeeper_ensemble.yaml</code>
 
-# 2. modify config files according to zookeeper
+# 3. create kafka services and statefulset
 
-# 3. create kafka service
-
-<code>create apply -f kafka-service.yaml</code>
-
-# 4. create kafka statefulset
-
-<code>create apply -f kafka-statefulset.yaml</code>
-
+<code>create apply -f kafka-broker-statefulset.yaml</code>

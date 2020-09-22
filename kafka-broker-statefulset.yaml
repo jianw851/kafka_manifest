@@ -48,19 +48,31 @@ spec:
       labels:
         app: kafka
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
       containers:
       - name: kafka
         image: liveget/kafka_aarch64:0.0.2
         imagePullPolicy: Always
         ports:
-        - containerPort: 9092
+        - name: inside
+          containerPort: 9092
+        - name: outside
+          containerPort: 9094
         env:
         - name: POD_IP
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
         - name: KAFKA_LISTENERS
-          value: PLAINTEXT://:9092
+          value: PLAINTEXT://:9092,OUTSIDE://:9094
         - name: KAFKA_HEAP_OPTS
           value: -Xmx2G -Xms2G
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
@@ -74,7 +86,17 @@ spec:
               unset KAFKA_PORT && \
               export KAFKA_ZOOKEEPER_CONNECT=${KAFKA_ZOOKEEPER_SERVICE_HOST}:${KAFKA_ZOOKEEPER_SERVICE_PORT} && \
               export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
-              export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092 && \
+              export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092,OUTSIDE://${POD_IP}:32094 && \
               exec start-kafka.sh
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: data
+          mountPath: /kafka
+      volumes:
+      - name: data
+        emptyDir: {}
       imagePullSecrets:
       - name: regcred
