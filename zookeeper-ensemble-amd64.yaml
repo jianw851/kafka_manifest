@@ -84,11 +84,11 @@ data:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: kafka-zookeeper
+  name: zookeeper
   labels:
     app: zookeeper
 spec:
-  serviceName: kafka-zookeeper-headless
+  serviceName: zookeeper-headless
   replicas: 3
   updateStrategy:
     type: RollingUpdate
@@ -143,7 +143,7 @@ spec:
           mountPath: /etc/jmx-zookeeper
       - name: zookeeper-server
         imagePullPolicy: "IfNotPresent"
-        image: liveget/zookeeper_amd64:0.0.1
+        image: liveget/zookeeper_amd64:0.0.3
         ports:
         - name: client
           containerPort: 2181
@@ -161,7 +161,7 @@ spec:
           {}
         env:
         - name : KAFKA_HEAP_OPTS
-          value: "-Xms512M -Xmx512M"
+          value: "-Xms2G -Xmx2G"
         - name : KAFKA_JMX_PORT
           value: "5555"
         - name : ZOOKEEPER_TICK_TIME
@@ -171,7 +171,7 @@ spec:
         - name : ZOOKEEPER_INIT_LIMIT
           value: "10"
         - name : ZOOKEEPER_MAX_CLIENT_CNXNS
-          value: "60"
+          value: "360"
         - name : ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT
           value: "3"
         - name : ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL
