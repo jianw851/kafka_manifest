@@ -1,0 +1,204 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
+  name: kafka-bootstrap
+spec:
+  ports:
+    - name: kafka-broker-port
+      port: 9092
+      protocol: TCP
+    - name: metrics
+      port: 5556
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
+  name: kafka-headless
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: broker
+      port: 9092
+      protocol: TCP
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-jmx-configmap
+  labels:
+    app: kafka
+data:
+  jmx-kafka-prometheus.yml: |+
+    jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:5555/jmxrmi
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    ssl: false
+    whitelistObjectNames:
+    - kafka.server:type=ReplicaManager,name=*
+    - kafka.controller:type=KafkaController,name=*
+    - kafka.server:type=BrokerTopicMetrics,name=*
+    - kafka.network:type=RequestMetrics,name=RequestsPerSec,request=*
+    - kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent
+    - kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=*
+    - kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent
+    - kafka.controller:type=ControllerStats,name=*
+    - kafka.server:type=SessionExpireListener,name=*
+    rules:
+    - pattern : kafka.server<type=ReplicaManager, name=(.+)><>(Value|OneMinuteRate)
+      name: "kafka_server_replicamanager_$1"
+    - pattern : kafka.controller<type=KafkaController, name=(.+)><>Value
+      name: "kafka_controller_kafkacontroller_$1"
+    - pattern : kafka.server<type=BrokerTopicMetrics, name=(.+)><>OneMinuteRate
+      name: "kafka_server_brokertopicmetrics_$1"
+    - pattern : kafka.network<type=RequestMetrics, name=RequestsPerSec, request=(.+)><>OneMinuteRate
+      name: "kafka_network_requestmetrics_requestspersec_$1"
+    - pattern : kafka.network<type=SocketServer, name=NetworkProcessorAvgIdlePercent><>Value
+      name: "kafka_network_socketserver_networkprocessoravgidlepercent"
+    - pattern : kafka.server<type=ReplicaFetcherManager, name=MaxLag, clientId=(.+)><>Value
+      name: "kafka_server_replicafetchermanager_maxlag_$1"
+    - pattern : kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate
+      name: "kafka_kafkarequesthandlerpool_requesthandleravgidlepercent"
+    - pattern : kafka.controller<type=ControllerStats, name=(.+)><>OneMinuteRate
+      name: "kafka_controller_controllerstats_$1"
+    - pattern : kafka.server<type=SessionExpireListener, name=(.+)><>OneMinuteRate
+      name: "kafka_server_sessionexpirelistener_$1"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-broker
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5556"
+    spec:
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - kafka
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: prometheus-jmx-exporter
+        image: "solsson/kafka-prometheus-jmx-exporter@sha256:6f82e2b0464f50da8104acd7363fb9b995001ddff77d248379f8788e78946143"
+        imagePullPolicy: "IfNotPresent"
+        command:
+        - java
+        - -XX:+UnlockExperimentalVMOptions
+        - -XX:+UseCGroupMemoryLimitForHeap
+        - -XX:MaxRAMFraction=1
+        - -XshowSettings:vm
+        - -jar
+        - jmx_prometheus_httpserver.jar
+        - "5556"
+        - /etc/jmx-kafka/jmx-kafka-prometheus.yml
+        ports:
+        - containerPort: 5556
+        resources:
+          {}
+        volumeMounts:
+        - name: jmx-config
+          mountPath: /etc/jmx-kafka
+      - name: kafka-broker
+        image: liveget/kafka_amd64:0.0.3
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: inside
+          containerPort: 9092
+        - name: outside
+          containerPort: 9094
+        - name: jmx 
+          containerPort: 5555
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://:9092,OUTSIDE://:9094
+        - name: KAFKA_HEAP_OPTS
+          value: -Xmx2G -Xms2G
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"
+        - name: KAFKA_AUTO_LEADER_REBALANCE_ENABLE
+          value: "true"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zookeeper-headless:2181"
+        - name: KAFKA_LOG_DIRS
+          value: "/opt/kafka/data/logs"
+        - name: "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"
+          value: "3"
+        - name: KAFKA_JMX_PORT
+          value: "5555"
+        command:
+            - /bin/sh
+            - -exc
+            - |
+              unset KAFKA_PORT && \
+              export KAFKA_ZOOKEEPER_CONNECT=${KAFKA_ZOOKEEPER_SERVICE_HOST}:${KAFKA_ZOOKEEPER_SERVICE_PORT} && \
+              export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
+              export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092,OUTSIDE://${POD_IP}:32094 && \
+              exec start-kafka.sh
+        volumeMounts:
+          - name: datadir
+            mountPath: /opt/kafka/data
+      volumes:
+      - name: jmx-config
+        configMap:
+          name: kafka-jmx-configmap
+      imagePullSecrets:
+      - name: regcred
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      resources:
+        requests:
+          storage: "100Gi"
+      storageClassName: "local-kafka-data"

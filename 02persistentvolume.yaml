@@ -1,0 +1,216 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live1-zookeeper-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live1 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live2-zookeeper-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live2 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-zookeeper-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live1-zookeeper-log-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/log
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-log
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live1 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live2-zookeeper-log-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/log
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-log
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live2 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-zookeeper-log-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/zookeeper/log
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-log
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-kafka-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 100Gi
+  local:
+    path: /mnt/kafka/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-kafka-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live2-kafka-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 100Gi
+  local:
+    path: /mnt/kafka/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-kafka-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live2
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: live1-kafka-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 100Gi
+  local:
+    path: /mnt/kafka/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-kafka-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - live1
