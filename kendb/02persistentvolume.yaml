@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-zookeeper-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 5Gi
+  local:
+    path: /mnt/data/zookeeper/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master.kendb.com 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-zookeeper-log-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  local:
+    path: /mnt/data/zookeeper/log
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zookeeper-log
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master.kendb.com 
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: master-kafka-data-pv
+  labels:
+    type: local
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 50Gi
+  local:
+    path: /mnt/data/kafka/data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-kafka-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - master.kendb.com

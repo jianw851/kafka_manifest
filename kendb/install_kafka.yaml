@@ -1,0 +1,2 @@
+kubectl apply -f 02persistentvolume.yaml
+kubectl apply -f kafka-complete.yaml

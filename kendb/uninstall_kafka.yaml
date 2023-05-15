@@ -1,0 +1,3 @@
+kubectl delete -f kafka-complete.yaml 
+kubectl delete pvc datadir-kafka-broker-0
+kubectl delete pv master-kafka-data-pv
